@@ -1,14 +1,14 @@
-FROM golang:1.20-alpine AS build
+FROM golang:1.22-alpine AS build
 WORKDIR /app
-COPY main.go go.mod go.sum .
-RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o myurls main.go
-RUN apk update && apk add upx
-RUN upx myurls
+COPY . .
+
+# RUN go env -w GOPROXY=https://mirrors.cloud.tencent.com/go/,direct
+RUN go mod download
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o myurls
 
 FROM scratch
 WORKDIR /app
 COPY --from=build /app/myurls ./
 COPY public/* ./public/
-EXPOSE 8002
+EXPOSE 8080
 ENTRYPOINT ["/app/myurls"]
